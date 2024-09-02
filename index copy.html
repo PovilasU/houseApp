@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Babylon.js Dynamic House Dimensions</title>
+
+    <style>
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Add the header -->
+    <h1>Povilas Demo</h1>
+
+    <div id="ui">
+      <label
+        >House Width: <input type="number" id="houseWidth" value="6" /></label
+      ><br />
+      <label
+        >House Depth: <input type="number" id="houseDepth" value="4" /></label
+      ><br />
+      <label
+        >House Height: <input type="number" id="houseHeight" value="4" /></label
+      ><br />
+      <label
+        >Fence Distance:
+        <input type="number" id="fenceDistance" value="2" /></label
+      ><br />
+      <label
+        >Well Radius: <input type="number" id="wellRadius" value="1" /></label
+      ><br />
+      <button onclick="updateScene()">Update</button>
+    </div>
+    <canvas id="renderCanvas"></canvas>
+
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script>
+      // Initialize the Babylon.js engine and scene
+      var canvas = document.getElementById("renderCanvas");
+      var engine = new BABYLON.Engine(canvas, true);
+      var scene = new BABYLON.Scene(engine);
+
+      // Add a camera and attach it to the canvas
+      var camera = new BABYLON.ArcRotateCamera(
+        "camera",
+        Math.PI / 2,
+        Math.PI / 3,
+        20,
+        BABYLON.Vector3.Zero(),
+        scene
+      );
+      camera.attachControl(canvas, true);
+
+      // Add a light to the scene
+      var light = new BABYLON.HemisphericLight(
+        "light",
+        new BABYLON.Vector3(0, 1, 0),
+        scene
+      );
+
+      // Create the ground (garden)
+      var ground = BABYLON.MeshBuilder.CreateGround(
+        "ground",
+        { width: 20, height: 20 },
+        scene
+      );
+
+      // Declare variables for the house, fence, and wells
+      var house, frontFence, backFence, leftFence, rightFence, well1, well2;
+
+      // Create the initial scene
+      function createScene() {
+        createHouse(6, 4, 4);
+        createFence(2);
+        createWells(1);
+      }
+
+      // Create the house
+      function createHouse(width, depth, height) {
+        if (house) house.dispose(); // Dispose the old house
+
+        house = BABYLON.MeshBuilder.CreateBox(
+          "house",
+          { width: width, depth: depth, height: height },
+          scene
+        );
+        house.position.y = height / 2; // Move the house up so it sits on the ground
+      }
+
+      // Create a fence around the house
+      function createFence(distance) {
+        // Dispose old fences
+        if (frontFence) frontFence.dispose();
+        if (backFence) backFence.dispose();
+        if (leftFence) leftFence.dispose();
+        if (rightFence) rightFence.dispose();
+
+        var fenceThickness = 0.2;
+        var fenceHeight = 1.5;
+        var fenceMaterial = new BABYLON.StandardMaterial("fenceMat", scene);
+        fenceMaterial.diffuseColor = new BABYLON.Color3(0.7, 0.4, 0.1); // Brown color for the fence
+
+        var houseWidth = parseFloat(
+          document.getElementById("houseWidth").value
+        );
+        var houseDepth = parseFloat(
+          document.getElementById("houseDepth").value
+        );
+
+        // Front fence
+        frontFence = BABYLON.MeshBuilder.CreateBox(
+          "frontFence",
+          {
+            width: houseWidth + 2 * distance,
+            height: fenceHeight,
+            depth: fenceThickness,
+          },
+          scene
+        );
+        frontFence.position.set(0, fenceHeight / 2, -houseDepth / 2 - distance);
+
+        // Back fence
+        backFence = BABYLON.MeshBuilder.CreateBox(
+          "backFence",
+          {
+            width: houseWidth + 2 * distance,
+            height: fenceHeight,
+            depth: fenceThickness,
+          },
+          scene
+        );
+        backFence.position.set(0, fenceHeight / 2, houseDepth / 2 + distance);
+
+        // Left fence
+        leftFence = BABYLON.MeshBuilder.CreateBox(
+          "leftFence",
+          {
+            width: fenceThickness,
+            height: fenceHeight,
+            depth: houseDepth + 2 * distance,
+          },
+          scene
+        );
+        leftFence.position.set(-houseWidth / 2 - distance, fenceHeight / 2, 0);
+
+        // Right fence
+        rightFence = BABYLON.MeshBuilder.CreateBox(
+          "rightFence",
+          {
+            width: fenceThickness,
+            height: fenceHeight,
+            depth: houseDepth + 2 * distance,
+          },
+          scene
+        );
+        rightFence.position.set(houseWidth / 2 + distance, fenceHeight / 2, 0);
+
+        // Assign the fence material to all fence parts
+        frontFence.material = fenceMaterial;
+        backFence.material = fenceMaterial;
+        leftFence.material = fenceMaterial;
+        rightFence.material = fenceMaterial;
+      }
+
+      // Create two sewage wells inside the fence
+      function createWells(radius) {
+        // Dispose old wells
+        if (well1) well1.dispose();
+        if (well2) well2.dispose();
+
+        var wellMaterial = new BABYLON.StandardMaterial("wellMat", scene);
+        wellMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4); // Grey color for the wells
+
+        var houseWidth = parseFloat(
+          document.getElementById("houseWidth").value
+        );
+        var houseDepth = parseFloat(
+          document.getElementById("houseDepth").value
+        );
+        var fenceDistance = parseFloat(
+          document.getElementById("fenceDistance").value
+        );
+
+        // Create first well
+        well1 = BABYLON.MeshBuilder.CreateCylinder(
+          "well1",
+          { diameter: 2 * radius, height: 0.5, tessellation: 24 },
+          scene
+        );
+        well1.position.set(
+          houseWidth / 2 - 1,
+          0.25,
+          houseDepth / 2 + fenceDistance / 2
+        ); // Position in the garden
+        well1.material = wellMaterial;
+
+        // Create second well
+        well2 = BABYLON.MeshBuilder.CreateCylinder(
+          "well2",
+          { diameter: 2 * radius, height: 0.5, tessellation: 24 },
+          scene
+        );
+        well2.position.set(
+          -houseWidth / 2 + 1,
+          0.25,
+          houseDepth / 2 + fenceDistance / 2
+        ); // Position in the garden
+        well2.material = wellMaterial;
+      }
+
+      // Function to update the scene based on input
+      function updateScene() {
+        var houseWidth = parseFloat(
+          document.getElementById("houseWidth").value
+        );
+        var houseDepth = parseFloat(
+          document.getElementById("houseDepth").value
+        );
+        var houseHeight = parseFloat(
+          document.getElementById("houseHeight").value
+        );
+        var fenceDistance = parseFloat(
+          document.getElementById("fenceDistance").value
+        );
+        var wellRadius = parseFloat(
+          document.getElementById("wellRadius").value
+        );
+
+        createHouse(houseWidth, houseDepth, houseHeight);
+        createFence(fenceDistance);
+        createWells(wellRadius);
+      }
+
+      // Render loop
+      engine.runRenderLoop(function () {
+        scene.render();
+      });
+
+      // Resize the engine on window resize
+      window.addEventListener("resize", function () {
+        engine.resize();
+      });
+
+      // Initial scene setup
+      createScene();
+    </script>
+  </body>
+</html>
